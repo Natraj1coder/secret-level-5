@@ -3,10 +3,11 @@ const express=require("express");
 const BodyParser=require("body-parser");
 const ejs=require("ejs");
 const bodyParser = require("body-parser");
-const md5=require("md5");
+// const md5=require("md5");
 const mongoose=require("mongoose");
-
-
+const bcyrt=require("bcrypt");
+const { hash } = require('bcrypt');
+const salt_round=10;
 const app=express();
 
 app.use(express.static("public"));
@@ -37,28 +38,43 @@ app.get("/register",function(req,res){
     res.render("register");
 });
 app.post("/register",function(req,res){
-    const newUser=new User({
-        email:req.body.username,
-        password:md5(req.body.password)
-    });
-    newUser.save(function(err){
-        if(err){
-            console.log(err);
-        }
-        res.render("secrets");
+    bcyrt.hash(req.body.username,salt_round,function(err,hash){
+
+        const newUser=new User({
+            email:req.body.username,
+            password:hash
+        });
+        newUser.save(function(err){
+            if(err){
+                console.log(err);
+            }
+            res.render("secrets");
+        });
     });
 });
 app.post("/login",function(req,res){
 const username=req.body.username;
-const password=md5(req.body.password);
+const password=req.body.password;
 User.findOne({email:username},function(err,fondUser){
     if(err){
         console.log(err);
     }
     if(fondUser){
-        if(fondUser.password===password){
-            res.render("secrets");
-        }
+        bcyrt.compare(password,fondUser.password,function(err,result){
+            console.log(fondUser.password);
+            console.log(password);
+              if(result=== true){
+                res.render("secrets");//$2b$10$mY7i1HWgXNQevLCS/BlWsu7pFxRXCTxB7rXfExfWb5XEedVIxL7ry
+              }  
+            else{
+                console.log(result);
+            }
+
+        });
+
+
+            
+        
     }
 })
 });
